@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -36,16 +37,24 @@ func CreateServer(framework string, version Version, serverName string, serverPo
 
 	// Step 1: Create directory
 	bar.Describe("Step 1/5: Creating server directory")
-	os.MkdirAll(serverName, 0755)
-	os.Chdir(serverName)
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+	}
+	desktopDir := filepath.Join(homeDir, "Desktop")
+	downloadDir := filepath.Join(desktopDir, serverName)
+	os.MkdirAll(downloadDir, 0755)
+	os.Chdir(downloadDir)
 	bar.Add(1)
 	time.Sleep(500 * time.Millisecond)
 
 	// Step 2: Download server
 	bar.Describe("Step 2/5: Downloading server files")
 	var filename string
-	if framework == "Vanilla" {
-		filename = DownloadVanillaServer(version)
+	switch framework {
+	case "Vanilla":
+		filename = DownloadVanillaServer(version, downloadDir)
+	case "PaperMC":
+		filename = DownloadPaperServer(version, downloadDir)
 	}
 	bar.Add(1)
 	time.Sleep(500 * time.Millisecond)
@@ -53,7 +62,7 @@ func CreateServer(framework string, version Version, serverName string, serverPo
 	// Step 3: Generate initial configuration
 	bar.Describe("Step 3/5: Generating initial configuration")
 	cmd := exec.Command("java", "-jar", filename, "nogui")
-	err := cmd.Start()
+	err = cmd.Start()
 	if err != nil {
 		fmt.Printf("Error starting server: %v\n", err)
 		os.Exit(1)

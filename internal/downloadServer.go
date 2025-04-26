@@ -3,11 +3,9 @@ package internal
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
-
-	"github.com/schollz/progressbar/v3"
+	"strings"
 )
 
 // VersionMetadata represents the structure of the version metadata JSON
@@ -19,7 +17,7 @@ type VersionMetadata struct {
 	} `json:"downloads"`
 }
 
-func DownloadVanillaServer(version Version) string {
+func DownloadVanillaServer(version Version, downloadDir string) string {
 	fmt.Printf("\nDownloading Minecraft server version %s...\n", version.ID)
 
 	resp, err := http.Get(version.URL)
@@ -36,13 +34,6 @@ func DownloadVanillaServer(version Version) string {
 		os.Exit(1)
 	}
 
-	serverResp, err := http.Get(metadata.Downloads.Server.URL)
-	if err != nil {
-		fmt.Println("Error downloading server:", err)
-		os.Exit(1)
-	}
-	defer serverResp.Body.Close()
-
 	filename := version.ID
 	for i, char := range filename {
 		if char == '.' {
@@ -51,35 +42,30 @@ func DownloadVanillaServer(version Version) string {
 	}
 	filename = filename + ".jar"
 
-	f, err := os.Create(filename)
-	if err != nil {
-		fmt.Println("Error creating server.jar file:", err)
-		os.Exit(1)
-	}
-	defer f.Close()
+	DownloadFileURL(metadata.Downloads.Server.URL, filename, downloadDir)
 
-	bar := progressbar.NewOptions64(
-		serverResp.ContentLength,
-		progressbar.OptionSetDescription("Downloading JAR"),
-		progressbar.OptionShowBytes(true),
-		progressbar.OptionSetWidth(30),
-		progressbar.OptionEnableColorCodes(true),
-		progressbar.OptionShowCount(),
-		progressbar.OptionSetTheme(progressbar.Theme{
-			Saucer:        "[green]=[reset]",
-			SaucerHead:    "[green]>[reset]",
-			SaucerPadding: " ",
-			BarStart:      "[",
-			BarEnd:        "]",
-		}),
-	)
+	return filename
+}
 
-	_, err = io.Copy(io.MultiWriter(f, bar), serverResp.Body)
+func DownloadPaperServer(version Version, downloadDir string) string {
+	resp, err := http.Get("https://api.papermc.io/v2/projects/paper/versions/" + version.ID + "/builds")
 	if err != nil {
-		fmt.Println("Error saving server.jar file:", err)
-		os.Exit(1)
 	}
 
-	fmt.Printf("Minecraft server version %s downloaded successfully!\n", version.ID)
+	var decodedBuilds PaperBuildOutput
+	err = json.NewDecoder(resp.Body).Decode(&decodedBuilds)
+	if err != nil {
+	}
+
+	latestBuild := decodedBuilds.Builds[len(decodedBuilds.Builds)-1]
+	println(latestBuild.Build)
+	url := fmt.Sprintf("https://api.papermc.io/v2/projects/paper/versions/%s/builds/%d/downloads/%s", version.ID, latestBuild.Build, latestBuild.Downloads.Application.Name)
+
+	filename := latestBuild.Downloads.Application.Name
+	strings.ReplaceAll(filename, ".", "-")
+	strings.Replace(filename, "-jar", ".jar", 1)
+
+	DownloadFileURL(url, filename, downloadDir)
+
 	return filename
 }

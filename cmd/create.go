@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"log"
 	"mcsb-cli/internal"
+	"mcsb-cli/util"
 	"os"
 	"strconv"
 
@@ -16,28 +19,25 @@ var createCmd = &cobra.Command{
 	Short: "Create a new Minecraft Server",
 	Long:  "Start the creation process of a new Minecraft Server",
 	Run: func(cmd *cobra.Command, args []string) {
+		// Get which framework the user wants to use (Vanilla, Paper, Spigot)
 		framework := getFramework()
-		fmt.Printf("Selected framework: %s\n", framework)
+
+		// What version of Minecraft the user wants
 		version := getServerVersion(framework)
-		fmt.Printf("Selected version: %s\n", version)
 
+		// The name of the server
 		serverName := getServerName()
-		fmt.Printf("Selected server name: %s\n", serverName)
 
+		// Desired port
 		serverPort := getServerPort()
-		fmt.Printf("Selected server port: %d\n", serverPort)
 
-		eula := acceptEula()
-		fmt.Printf("EULA accepted: %t\n", eula)
+		// Whether they want to accept the EULA
+		acceptEula()
 
-		if !eula {
-			fmt.Println("EULA not accepted, exiting...")
-			os.Exit(1)
-		}
-
+		// With all the information, create the server directory and download the files
 		internal.CreateServer(framework, version, serverName, serverPort)
 
-		fmt.Println("Server created successfully!")
+		fmt.Println("\nServer created successfully!")
 
 	},
 }
@@ -53,6 +53,7 @@ func getFramework() string {
 		Label:     "Select the server framework",
 		Items:     coloredOptions,
 		Templates: internal.Templates,
+		Stdout:    util.NoBellStdout,
 	}
 
 	frameworkResult, _, err := frameworkPrompt.Run()
@@ -65,39 +66,54 @@ func getFramework() string {
 }
 
 func getServerVersion(framework string) internal.Version {
-	if framework == "Vanilla" {
-		versions := internal.GetVanillaVersions()
-
-		coloredVersions := []internal.ColoredOption{}
-		for _, v := range versions {
-			coloredVersions = append(coloredVersions, internal.ColoredOption{OptionText: v.ID, Color: color.YellowString(v.ID)})
-		}
-
-		latestVersion := coloredVersions[0].OptionText + " (latest)"
-		coloredVersions[0].Color = color.GreenString(latestVersion)
-		coloredVersions[0].OptionText = latestVersion
-
-		versionPrompt := promptui.Select{
-			Label:     "Select the server version",
-			Items:     coloredVersions,
-			Templates: internal.Templates,
-		}
-
-		versionResult, _, err := versionPrompt.Run()
-		if err != nil {
-			fmt.Printf("Prompt failed %v\n", err)
-			os.Exit(1)
-		}
-
-		return versions[versionResult]
+	var versions []internal.Version
+	switch framework {
+	case "Vanilla":
+		versions = internal.GetVanillaVersions()
+	case "PaperMC":
+		versions = internal.GetPaperVersions()
 	}
 
-	return internal.Version{}
+	if len(versions) == 0 {
+		log.Fatalf("no versions found for %s", framework)
+	}
+
+	var coloredVersions []internal.ColoredOption
+	for _, v := range versions {
+		coloredVersions = append(coloredVersions, internal.ColoredOption{OptionText: v.ID, Color: color.YellowString(v.ID)})
+	}
+
+	latestVersionIndex := 0
+	if framework == "PaperMC" && versions[0].Type == "experimental" {
+		experimentalVersion := coloredVersions[0].OptionText + "(experimental)"
+		coloredVersions[0].Color = color.RedString(experimentalVersion)
+		coloredVersions[0].OptionText = experimentalVersion
+		latestVersionIndex = 1
+	}
+
+	latestVersion := coloredVersions[latestVersionIndex].OptionText + " (latest)"
+	coloredVersions[latestVersionIndex].Color = color.GreenString(latestVersion)
+	coloredVersions[latestVersionIndex].OptionText = latestVersion
+
+	versionPrompt := promptui.Select{
+		Label:     "Select the server version",
+		Items:     coloredVersions,
+		Templates: internal.Templates,
+		Stdout:    util.NoBellStdout,
+	}
+
+	versionResult, _, err := versionPrompt.Run()
+	if err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		os.Exit(1)
+	}
+	return versions[versionResult]
 }
 
 func getServerName() string {
 	serverNamePrompt := promptui.Prompt{
-		Label: "Enter your server name",
+		Label:       "Enter your server name",
+		HideEntered: true,
 	}
 
 	serverNameResult, err := serverNamePrompt.Run()
@@ -122,6 +138,7 @@ func getServerPort() int {
 			}
 			return nil
 		},
+		HideEntered: true,
 	}
 
 	serverPortResult, err := serverPortPrompt.Run()
@@ -139,26 +156,24 @@ func getServerPort() int {
 	return serverPort
 }
 
-func acceptEula() bool {
+func acceptEula() {
 
-	coloredOptions := []internal.ColoredOption{
-		{OptionText: "Yes", Color: color.GreenString("Yes")},
-		{OptionText: "No", Color: color.RedString("No")},
+	eulaPrompt := promptui.Prompt{
+		Label:       "Do you wish to accept Mojang's EULA?",
+		IsConfirm:   true,
+		Default:     "Y",
+		HideEntered: true,
+	}
+	_, err := eulaPrompt.Run()
+
+	switch {
+	case errors.Is(err, promptui.ErrAbort):
+		fmt.Println("You did not accept Mojang's EULA, exiting server creation.")
+		os.Exit(0)
+	case errors.Is(err, promptui.ErrInterrupt):
+		fmt.Println("Exiting server creation.")
 	}
 
-	eulaPrompt := promptui.Select{
-		Label:     "Accept the EULA",
-		Items:     coloredOptions,
-		Templates: internal.Templates,
-	}
-
-	eulaResult, _, err := eulaPrompt.Run()
-	if err != nil {
-		fmt.Printf("Prompt failed %v\n", err)
-		os.Exit(1)
-	}
-
-	return eulaResult == 0
 }
 
 func Execute() {
