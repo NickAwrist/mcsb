@@ -50,15 +50,24 @@ func DownloadVanillaServer(version Version, downloadDir string) string {
 func DownloadPaperServer(version Version, downloadDir string) string {
 	resp, err := http.Get("https://api.papermc.io/v2/projects/paper/versions/" + version.ID + "/builds")
 	if err != nil {
+		fmt.Println("Error fetching version metadata:", err)
+		os.Exit(1)
 	}
 
 	var decodedBuilds PaperBuildOutput
 	err = json.NewDecoder(resp.Body).Decode(&decodedBuilds)
 	if err != nil {
+		fmt.Println("Error decoding version metadata:", err)
+		os.Exit(1)
+	}
+
+	if len(decodedBuilds.Builds) == 0 {
+		fmt.Printf("\nNo builds found for version %s\n", version.ID)
+		os.Exit(1)
 	}
 
 	latestBuild := decodedBuilds.Builds[len(decodedBuilds.Builds)-1]
-	println(latestBuild.Build)
+
 	url := fmt.Sprintf("https://api.papermc.io/v2/projects/paper/versions/%s/builds/%d/downloads/%s", version.ID, latestBuild.Build, latestBuild.Downloads.Application.Name)
 
 	filename := latestBuild.Downloads.Application.Name

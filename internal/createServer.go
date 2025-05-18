@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -21,6 +22,8 @@ func CreateServer(framework string, version Version, serverName string, serverPo
 		"Accepting EULA",
 		"Customizing server properties",
 	}
+
+	fmt.Printf("\nCreating server %s with framework %s and version %s\n", serverName, framework, version.ID)
 
 	totalSteps := len(steps)
 	bar := progressbar.NewOptions(totalSteps,
@@ -61,21 +64,11 @@ func CreateServer(framework string, version Version, serverName string, serverPo
 
 	// Step 3: Generate initial configuration
 	bar.Describe("Step 3/5: Generating initial configuration")
-	cmd := exec.Command("java", "-jar", filename, "nogui")
-	err = cmd.Start()
+	err = runServer(filename)
 	if err != nil {
-		fmt.Printf("Error starting server: %v\n", err)
+		fmt.Printf("Failed to generate initial configuration: %v\n", err)
 		os.Exit(1)
 	}
-
-	// Wait for server to generate files
-	for {
-		time.Sleep(1 * time.Second)
-		if _, err := os.Stat("eula.txt"); err == nil {
-			break
-		}
-	}
-	cmd.Process.Kill()
 	bar.Add(1)
 	time.Sleep(500 * time.Millisecond)
 
@@ -115,6 +108,55 @@ func CreateServer(framework string, version Version, serverName string, serverPo
 	bar.Add(1)
 	time.Sleep(500 * time.Millisecond)
 
+}
+
+func runServer(filename string) error {
+	cmd := exec.Command("java", "-jar", filename, "nogui")
+
+	// Capture stderr to check for Java version errors
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	err := cmd.Start()
+	if err != nil {
+		fmt.Printf("Error starting server: %v\n", err)
+		return err
+	}
+
+	errChan := make(chan error, 1)
+	fileChan := make(chan bool, 1)
+
+	go func() {
+		for {
+			time.Sleep(1 * time.Second)
+			if _, err := os.Stat("eula.txt"); err == nil {
+				fileChan <- true
+				return
+			}
+			if strings.Contains(stderr.String(), "Unsupported Java") {
+				errChan <- fmt.Errorf("%s", stderr.String())
+				return
+			}
+			// Check if process exited with error
+			if cmd.ProcessState != nil && cmd.ProcessState.Exited() {
+				errChan <- fmt.Errorf("server process exited unexpectedly: %s", stderr.String())
+				return
+			}
+		}
+	}()
+
+	select {
+	case err := <-errChan:
+		fmt.Printf("Error during server initialization: %v\n", err)
+		return err
+	case <-fileChan:
+		// Successfully generated files
+	case <-time.After(30 * time.Second):
+		fmt.Println("Timeout waiting for server initialization")
+		return fmt.Errorf("timeout waiting for server initialization")
+	}
+	cmd.Process.Kill()
+	return nil
 }
 
 func acceptEula() error {

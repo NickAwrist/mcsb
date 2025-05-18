@@ -8,6 +8,7 @@ import (
 	"mcsb-cli/util"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/manifoldco/promptui"
@@ -19,27 +20,59 @@ var createCmd = &cobra.Command{
 	Short: "Create a new Minecraft Server",
 	Long:  "Start the creation process of a new Minecraft Server",
 	Run: func(cmd *cobra.Command, args []string) {
-		// Get which framework the user wants to use (Vanilla, Paper, Spigot)
-		framework := getFramework()
+		// Get which framework the user wants to use (Vanilla, Paper)
+		framework, _ := cmd.Flags().GetString("framework")
+		if framework != "" {
+			if strings.ToLower(framework) == "paper" || strings.ToLower(framework) == "papermc" {
+				framework = "PaperMC"
+			} else if strings.ToLower(framework) == "vanilla" {
+				framework = "Vanilla"
+			} else {
+				fmt.Printf("Invalid framework '%s'. Using interactive prompt instead.\n", framework)
+				framework = ""
+			}
+		}
+		if framework == "" {
+			framework = getFramework()
+		}
 
 		// What version of Minecraft the user wants
-		version := getServerVersion(framework)
+		version, _ := cmd.Flags().GetString("version")
+		if version == "" {
+			version = getServerVersion(framework)
+		}
 
 		// The name of the server
-		serverName := getServerName()
+		serverName, _ := cmd.Flags().GetString("name")
+		if serverName == "" {
+			serverName = getServerName()
+		}
 
 		// Desired port
-		serverPort := getServerPort()
+		serverPort, _ := cmd.Flags().GetInt("port")
+		if serverPort == 0 {
+			serverPort = getServerPort()
+		}
 
 		// Whether they want to accept the EULA
-		acceptEula()
+		acceptEula, _ := cmd.Flags().GetBool("eula")
+		if !acceptEula {
+			acceptEulaPrompt()
+		}
 
 		// With all the information, create the server directory and download the files
-		internal.CreateServer(framework, version, serverName, serverPort)
+		internal.CreateServer(framework, internal.Version{ID: version}, serverName, serverPort)
 
 		fmt.Println("\nServer created successfully!")
-
 	},
+}
+
+func init() {
+	createCmd.Flags().StringP("framework", "f", "", "Server framework (PaperMC or Vanilla)")
+	createCmd.Flags().StringP("version", "v", "", "Minecraft version")
+	createCmd.Flags().StringP("name", "n", "", "Server name")
+	createCmd.Flags().IntP("port", "p", 25565, "Server port")
+	createCmd.Flags().BoolP("eula", "e", false, "Accept EULA")
 }
 
 func getFramework() string {
@@ -64,7 +97,7 @@ func getFramework() string {
 	return coloredOptions[frameworkResult].OptionText
 }
 
-func getServerVersion(framework string) internal.Version {
+func getServerVersion(framework string) string {
 	var versions []internal.Version
 	switch framework {
 	case "Vanilla":
@@ -106,7 +139,7 @@ func getServerVersion(framework string) internal.Version {
 		fmt.Printf("Prompt failed %v\n", err)
 		os.Exit(1)
 	}
-	return versions[versionResult]
+	return versions[versionResult].ID
 }
 
 func getServerName() string {
@@ -126,8 +159,11 @@ func getServerName() string {
 
 func getServerPort() int {
 	serverPortPrompt := promptui.Prompt{
-		Label: "Enter the server port",
+		Label: "Enter the server port (default: 25565)",
 		Validate: func(input string) error {
+			if input == "" {
+				return nil
+			}
 			port, err := strconv.Atoi(input)
 			if err != nil {
 				return fmt.Errorf("invalid port: %v", err)
@@ -146,6 +182,10 @@ func getServerPort() int {
 		os.Exit(1)
 	}
 
+	if serverPortResult == "" {
+		serverPortResult = "25565"
+	}
+
 	serverPort, err := strconv.Atoi(serverPortResult)
 	if err != nil {
 		fmt.Printf("Invalid port: %v\n", err)
@@ -155,8 +195,7 @@ func getServerPort() int {
 	return serverPort
 }
 
-func acceptEula() {
-
+func acceptEulaPrompt() {
 	eulaPrompt := promptui.Prompt{
 		Label:       "Do you wish to accept Mojang's EULA?",
 		IsConfirm:   true,
@@ -172,7 +211,6 @@ func acceptEula() {
 	case errors.Is(err, promptui.ErrInterrupt):
 		fmt.Println("Exiting server creation.")
 	}
-
 }
 
 func Execute() {
