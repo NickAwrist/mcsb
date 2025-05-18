@@ -1,0 +1,84 @@
+project_name: obsidian-ops-cli
+
+version: 2
+
+before:
+  hooks:
+    # You may remove this if you don't use go modules.
+    - go mod tidy
+    # you may remove this if you don't need go generate
+    - go generate ./...
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    binary: obops
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X {{.ModulePath}}/cmd.Version={{.Version}}
+      - -X {{.ModulePath}}/cmd.Commit={{.ShortCommit}}
+
+archives:
+  - formats: [tar.gz]
+    # this name template makes the OS and Arch compatible with the results of `uname`.
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    # use zip for windows archives
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+brews:
+  - name: obops
+    tap:
+      owner: "{{.Env.GITHUB_REPOSITORY_OWNER}}"
+      name: "obsidian-ops-cli"
+      folder: "Formula/"
+    homepage: "https://github.com/{{.Env.GITHUB_REPOSITORY_OWNER}}/obsidian-ops-cli"
+    description: "ObsidianOps Command Line Interface for creating Minecraft servers"
+    license: "MIT"
+    install: |
+      bin.install "obops"
+    test: |
+      system "#{bin}/obops --version"
+
+chocolateys:
+  - name: obops
+    title: "ObsidianOps CLI"
+    authors: "{{.Env.GITHUB_REPOSITORY_OWNER}}"
+    project_url: "https://github.com/{{.Env.GITHUB_REPOSITORY_OWNER}}/obsidian-ops-cli"
+    license_url: "https://github.com/{{.Env.GITHUB_REPOSITORY_OWNER}}/obsidian-ops-cli/main/LICENSE"
+    tags: "obops cli utility"
+    summary: "ObsidianOps Command Line Interface"
+    description: |
+      ObsidianOps Command Line Interface for creating Minecraft servers
+    release_notes: "https://github.com/{{.Env.GITHUB_REPOSITORY_OWNER}}/obsidian-ops-cli/releases/tag/v{{.Version}}"
+    api_key: "{{ .Env.CHOCOLATEY_API_KEY }}"
+    source_repo: "https://push.chocolatey.org/"
+    skip_publish: false
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+
+release:
+  footer: >-
+
+    ---
+
+    Released by [GoReleaser](https://github.com/goreleaser/goreleaser).

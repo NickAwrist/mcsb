@@ -68,6 +68,8 @@ var createCmd = &cobra.Command{
 }
 
 func init() {
+	rootCmd.AddCommand(createCmd)
+
 	createCmd.Flags().StringP("framework", "f", "", "Server framework (PaperMC or Vanilla)")
 	createCmd.Flags().StringP("version", "v", "", "Minecraft version")
 	createCmd.Flags().StringP("name", "n", "", "Server name")
@@ -213,7 +215,7 @@ func acceptEulaPrompt() {
 	}
 }
 
-func Execute() {
+func ExecuteCreate() {
 	if err := createCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

@@ -2,10 +2,11 @@ package internal
 
 import (
 	"fmt"
-	"github.com/schollz/progressbar/v3"
 	"io"
 	"net/http"
 	"os"
+
+	"github.com/schollz/progressbar/v3"
 )
 
 func DownloadFileURL(url string, filename string, downloadDir string) {
