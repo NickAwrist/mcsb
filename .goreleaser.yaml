@@ -42,10 +42,10 @@ archives:
 
 brews:
   - name: obops
-    tap:
+    repository:
       owner: "{{.Env.GITHUB_REPOSITORY_OWNER}}"
       name: "obsidian-ops-cli"
-      folder: "Formula/"
+    folder: "Formula/"
     homepage: "https://github.com/{{.Env.GITHUB_REPOSITORY_OWNER}}/obsidian-ops-cli"
     description: "ObsidianOps Command Line Interface for creating Minecraft servers"
     license: "MIT"
