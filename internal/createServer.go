@@ -69,7 +69,12 @@ func CreateServer(framework string, version Version, serverName string, serverPo
 	}
 
 	// Wait for server to generate files
-	time.Sleep(8 * time.Second)
+	for {
+		time.Sleep(1 * time.Second)
+		if _, err := os.Stat("eula.txt"); err == nil {
+			break
+		}
+	}
 	cmd.Process.Kill()
 	bar.Add(1)
 	time.Sleep(500 * time.Millisecond)
@@ -78,19 +83,9 @@ func CreateServer(framework string, version Version, serverName string, serverPo
 	bar.Describe("Step 4/5: Accepting EULA")
 	time.Sleep(2 * time.Second)
 
-	// Try multiple times to access the file
-	var eulaErr error
-	for attempts := 0; attempts < 3; attempts++ {
-		eulaErr = acceptEula()
-		if eulaErr == nil {
-			break
-		}
-		fmt.Printf("Retrying EULA acceptance (%d/3)...\n", attempts+1)
-		time.Sleep(2 * time.Second)
-	}
-
+	eulaErr := acceptEula()
 	if eulaErr != nil {
-		fmt.Printf("Failed to accept EULA after multiple attempts: %v\n", eulaErr)
+		fmt.Printf("Failed to accept EULA: %v\n", eulaErr)
 		os.Exit(1)
 	}
 
@@ -126,7 +121,15 @@ func acceptEula() error {
 	// Edit the eula.txt file
 	eulaFile, err := os.OpenFile("eula.txt", os.O_RDWR, 0644)
 	if err != nil {
-		return fmt.Errorf("error opening eula.txt: %w", err)
+		eulaFile, err = os.Create("eula.txt")
+		if err != nil {
+			return fmt.Errorf("error creating eula.txt: %w", err)
+		}
+		_, err = eulaFile.WriteString("eula=true")
+		if err != nil {
+			return fmt.Errorf("error writing to eula.txt: %w", err)
+		}
+		return nil
 	}
 	defer eulaFile.Close()
 

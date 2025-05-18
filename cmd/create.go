@@ -46,7 +46,6 @@ func getFramework() string {
 	coloredOptions := []internal.ColoredOption{
 		{OptionText: "PaperMC", Color: color.CyanString("PaperMC (recommended)")},
 		{OptionText: "Vanilla", Color: color.GreenString("Vanilla")},
-		{OptionText: "Spigot", Color: color.YellowString("Spigot")},
 	}
 
 	frameworkPrompt := promptui.Select{

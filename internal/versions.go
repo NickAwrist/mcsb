@@ -35,7 +35,6 @@ func GetVanillaVersions() []Version {
 
 func GetPaperVersions() []Version {
 
-	println("Getting paper versions")
 	resp, err := http.Get("https://api.papermc.io/v2/projects/paper")
 	if err != nil {
 		fmt.Println("Error fetching versions:", err)
@@ -50,12 +49,9 @@ func GetPaperVersions() []Version {
 		return nil
 	}
 
-	println("Getting paper builds and versions")
 	slices.Reverse(responseManifest.Versions)
 	var versions []Version
 	for i, v := range responseManifest.Versions {
-		println("Version: " + v)
-
 		versionType := "default"
 		if i == 0 {
 			resp, err := http.Get("https://api.papermc.io/v2/projects/paper/versions/" + v + "/builds")
@@ -78,7 +74,6 @@ func GetPaperVersions() []Version {
 			URL:  "TBD",
 		}
 
-		println(latestVersion.Type)
 		versions = append(versions, latestVersion)
 	}
 
