@@ -42,7 +42,7 @@ archives:
 
 brews:
   - name: obops
-    tap:
+    repository:
       owner: "{{.Env.GITHUB_REPOSITORY_OWNER}}"
       name: "obsidian-ops-cli"
       folder: "Formula/"
