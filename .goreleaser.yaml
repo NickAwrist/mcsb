@@ -43,10 +43,10 @@ archives:
 brews:
   - name: obops
     repository:
-      owner: "{{.Env.GITHUB_REPOSITORY_OWNER}}"
+      owner: "NickAwrist"
       name: "obsidian-ops-cli"
     directory: "Formula/"
-    homepage: "https://github.com/{{.Env.GITHUB_REPOSITORY_OWNER}}/obsidian-ops-cli"
+    homepage: "https://github.com/NickAwrist/obsidian-ops-cli"
     description: "ObsidianOps Command Line Interface for creating Minecraft servers"
     license: "MIT"
     install: |
@@ -57,14 +57,14 @@ brews:
 chocolateys:
   - name: obops
     title: "ObsidianOps CLI"
-    authors: "{{.Env.GITHUB_REPOSITORY_OWNER}}"
-    project_url: "https://github.com/{{.Env.GITHUB_REPOSITORY_OWNER}}/obsidian-ops-cli"
-    license_url: "https://github.com/{{.Env.GITHUB_REPOSITORY_OWNER}}/obsidian-ops-cli/main/LICENSE"
+    authors: "NickAwrist"
+    project_url: "https://github.com/NickAwrist/obsidian-ops-cli"
+    license_url: "https://github.com/NickAwrist/obsidian-ops-cli/main/LICENSE"
     tags: "obops cli utility"
     summary: "ObsidianOps Command Line Interface"
     description: |
       ObsidianOps Command Line Interface for creating Minecraft servers
-    release_notes: "https://github.com/{{.Env.GITHUB_REPOSITORY_OWNER}}/obsidian-ops-cli/releases/tag/v{{.Version}}"
+    release_notes: "https://github.com/NickAwrist/obsidian-ops-cli/releases/tag/v{{.Version}}"
     api_key: "{{ .Env.CHOCOLATEY_API_KEY }}"
     source_repo: "https://push.chocolatey.org/"
     skip_publish: false
