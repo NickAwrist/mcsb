@@ -5,21 +5,21 @@
 class Obops < Formula
   desc "ObsidianOps Command Line Interface for creating Minecraft servers"
   homepage "https://github.com/NickAwrist/obsidian-ops-cli"
-  version "0.1.0"
+  version "0.1.1"
   license "MIT"
 
   on_macos do
     if Hardware::CPU.intel?
-      url "https://github.com/NickAwrist/obsidian-ops-cli/releases/download/v0.1.0/obsidian-ops-cli_Darwin_x86_64.tar.gz"
-      sha256 "f2ff86c9262a1d8057f464b1f7f88ea6e3cd4aa9add8fa5b945fadd62df46e6e"
+      url "https://github.com/NickAwrist/obsidian-ops-cli/releases/download/v0.1.1/obsidian-ops-cli_Darwin_x86_64.tar.gz"
+      sha256 "ef606575d674ba816934aa007eed10960713fb9f4176fc3a666dd30277f3ff1a"
 
       def install
         bin.install "obops"
       end
     end
     if Hardware::CPU.arm?
-      url "https://github.com/NickAwrist/obsidian-ops-cli/releases/download/v0.1.0/obsidian-ops-cli_Darwin_arm64.tar.gz"
-      sha256 "9d1ba2a21f36651abf2aa6ccca1c5747dfddec6e7e1a0377e42cc706619e62d7"
+      url "https://github.com/NickAwrist/obsidian-ops-cli/releases/download/v0.1.1/obsidian-ops-cli_Darwin_arm64.tar.gz"
+      sha256 "6a2c5db439200b4db43cb389f15f06787860c4f9bd2c9ebf106729ae2e054c73"
 
       def install
         bin.install "obops"
@@ -29,15 +29,15 @@ class Obops < Formula
 
   on_linux do
     if Hardware::CPU.intel? and Hardware::CPU.is_64_bit?
-      url "https://github.com/NickAwrist/obsidian-ops-cli/releases/download/v0.1.0/obsidian-ops-cli_Linux_x86_64.tar.gz"
-      sha256 "9842bb84566ff70af5ca1f8146cff9b7a17dc544660fb0d1cf219e38670e21ca"
+      url "https://github.com/NickAwrist/obsidian-ops-cli/releases/download/v0.1.1/obsidian-ops-cli_Linux_x86_64.tar.gz"
+      sha256 "3a404b115efb392350065feee6d79d8e5ef6df79e55389cc0e82518199a293d9"
       def install
         bin.install "obops"
       end
     end
     if Hardware::CPU.arm? and Hardware::CPU.is_64_bit?
-      url "https://github.com/NickAwrist/obsidian-ops-cli/releases/download/v0.1.0/obsidian-ops-cli_Linux_arm64.tar.gz"
-      sha256 "dd9325d35eccd5a4294c5b4b5f0622ccbe0b0f9f54cc25d551385f21e40e6dda"
+      url "https://github.com/NickAwrist/obsidian-ops-cli/releases/download/v0.1.1/obsidian-ops-cli_Linux_arm64.tar.gz"
+      sha256 "0ed9d2400ce941c7532d6627876ec414b4f9e9012d5e05bd1233e872efdb06b2"
       def install
         bin.install "obops"
       end
